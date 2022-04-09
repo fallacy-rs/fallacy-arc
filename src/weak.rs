@@ -101,3 +101,37 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for Weak<T> {
         fmt::Debug::fmt(&self.0, f)
     }
 }
+
+#[cfg(feature = "serde")]
+mod serde {
+    use crate::Weak;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    impl<T> Serialize for Weak<T>
+    where
+        T: ?Sized + Serialize,
+    {
+        #[inline]
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            self.upgrade().serialize(serializer)
+        }
+    }
+
+    /// The resulting `Weak<T>` has a reference count of 0 and cannot be upgraded.
+    impl<'de, T> Deserialize<'de> for Weak<T>
+    where
+        T: Deserialize<'de>,
+    {
+        #[inline]
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let _ = Option::<T>::deserialize(deserializer)?;
+            Ok(Weak::new())
+        }
+    }
+}

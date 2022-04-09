@@ -122,3 +122,36 @@ impl<T: ?Sized> fmt::Pointer for Arc<T> {
         fmt::Pointer::fmt(&self.0, f)
     }
 }
+
+#[cfg(feature = "serde")]
+mod serde {
+    use crate::Arc;
+    use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+
+    impl<T> Serialize for Arc<T>
+    where
+        T: ?Sized + Serialize,
+    {
+        #[inline]
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            (**self).serialize(serializer)
+        }
+    }
+
+    impl<'de, T> Deserialize<'de> for Arc<T>
+    where
+        T: Deserialize<'de>,
+    {
+        #[inline]
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let val = Deserialize::deserialize(deserializer)?;
+            Arc::try_new(val).map_err(D::Error::custom)
+        }
+    }
+}

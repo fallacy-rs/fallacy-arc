@@ -14,3 +14,4 @@ documentation = "https://docs.rs/fallacy-arc/"
 
 [dependencies]
 fallacy-alloc = "0.1.0"
+serde = { version = "1.0.136", optional = true }
